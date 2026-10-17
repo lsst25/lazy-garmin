@@ -18,4 +18,82 @@
             <listEntry value="7">@Strings.AccentViolet</listEntry>
         </settingConfig>
     </setting>
+    <setting propertyKey="@Properties.fieldLeft" title="@Strings.SettingFieldLeft">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.Field0</listEntry>
+            <listEntry value="1">@Strings.Field1</listEntry>
+            <listEntry value="2">@Strings.Field2</listEntry>
+            <listEntry value="3">@Strings.Field3</listEntry>
+            <listEntry value="4">@Strings.Field4</listEntry>
+            <listEntry value="5">@Strings.Field5</listEntry>
+            <listEntry value="6">@Strings.Field6</listEntry>
+            <listEntry value="7">@Strings.Field7</listEntry>
+            <listEntry value="8">@Strings.Field8</listEntry>
+            <listEntry value="9">@Strings.Field9</listEntry>
+            <listEntry value="10">@Strings.Field10</listEntry>
+            <listEntry value="11">@Strings.Field11</listEntry>
+            <listEntry value="12">@Strings.Field12</listEntry>
+            <listEntry value="13">@Strings.Field13</listEntry>
+            <listEntry value="14">@Strings.Field14</listEntry>
+            <listEntry value="15">@Strings.Field15</listEntry>
+            <listEntry value="16">@Strings.Field16</listEntry>
+            <listEntry value="17">@Strings.Field17</listEntry>
+            <listEntry value="18">@Strings.Field18</listEntry>
+            <listEntry value="19">@Strings.Field19</listEntry>
+            <listEntry value="20">@Strings.Field20</listEntry>
+            <listEntry value="21">@Strings.Field21</listEntry>
+        </settingConfig>
+    </setting>
+    <setting propertyKey="@Properties.fieldRight" title="@Strings.SettingFieldRight">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.Field0</listEntry>
+            <listEntry value="1">@Strings.Field1</listEntry>
+            <listEntry value="2">@Strings.Field2</listEntry>
+            <listEntry value="3">@Strings.Field3</listEntry>
+            <listEntry value="4">@Strings.Field4</listEntry>
+            <listEntry value="5">@Strings.Field5</listEntry>
+            <listEntry value="6">@Strings.Field6</listEntry>
+            <listEntry value="7">@Strings.Field7</listEntry>
+            <listEntry value="8">@Strings.Field8</listEntry>
+            <listEntry value="9">@Strings.Field9</listEntry>
+            <listEntry value="10">@Strings.Field10</listEntry>
+            <listEntry value="11">@Strings.Field11</listEntry>
+            <listEntry value="12">@Strings.Field12</listEntry>
+            <listEntry value="13">@Strings.Field13</listEntry>
+            <listEntry value="14">@Strings.Field14</listEntry>
+            <listEntry value="15">@Strings.Field15</listEntry>
+            <listEntry value="16">@Strings.Field16</listEntry>
+            <listEntry value="17">@Strings.Field17</listEntry>
+            <listEntry value="18">@Strings.Field18</listEntry>
+            <listEntry value="19">@Strings.Field19</listEntry>
+            <listEntry value="20">@Strings.Field20</listEntry>
+            <listEntry value="21">@Strings.Field21</listEntry>
+        </settingConfig>
+    </setting>
+    <setting propertyKey="@Properties.fieldBottom" title="@Strings.SettingFieldBottom">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.Field0</listEntry>
+            <listEntry value="1">@Strings.Field1</listEntry>
+            <listEntry value="2">@Strings.Field2</listEntry>
+            <listEntry value="3">@Strings.Field3</listEntry>
+            <listEntry value="4">@Strings.Field4</listEntry>
+            <listEntry value="5">@Strings.Field5</listEntry>
+            <listEntry value="6">@Strings.Field6</listEntry>
+            <listEntry value="7">@Strings.Field7</listEntry>
+            <listEntry value="8">@Strings.Field8</listEntry>
+            <listEntry value="9">@Strings.Field9</listEntry>
+            <listEntry value="10">@Strings.Field10</listEntry>
+            <listEntry value="11">@Strings.Field11</listEntry>
+            <listEntry value="12">@Strings.Field12</listEntry>
+            <listEntry value="13">@Strings.Field13</listEntry>
+            <listEntry value="14">@Strings.Field14</listEntry>
+            <listEntry value="15">@Strings.Field15</listEntry>
+            <listEntry value="16">@Strings.Field16</listEntry>
+            <listEntry value="17">@Strings.Field17</listEntry>
+            <listEntry value="18">@Strings.Field18</listEntry>
+            <listEntry value="19">@Strings.Field19</listEntry>
+            <listEntry value="20">@Strings.Field20</listEntry>
+            <listEntry value="21">@Strings.Field21</listEntry>
+        </settingConfig>
+    </setting>
 </settings>

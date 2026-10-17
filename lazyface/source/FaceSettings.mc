@@ -3,13 +3,17 @@ import Toybox.WatchUi;
 
 // On-device settings (hold Up > Watch Face > Customize). Side-loaded apps
 // can't be configured from the phone, so this is the way to change them.
-// Properties: "theme" (Theme.THEME_NAMES), "accent" (Theme.ACCENT_NAMES).
+// Properties: "theme" (Theme.THEME_NAMES), "accent" (Theme.ACCENT_NAMES),
+// "fieldLeft" / "fieldRight" / "fieldBottom" (DataFields.NAMES).
 class FaceSettingsMenu extends WatchUi.Menu2 {
 
     function initialize() {
         Menu2.initialize({ :title => "lazyface" });
         addItem(Choices.item("Theme", "theme", Theme.THEME_NAMES, 0));
         addItem(Choices.item("Clock color", "accent", Theme.ACCENT_NAMES, Theme.BLUE));
+        addItem(Choices.item("Left field", "fieldLeft", DataFields.NAMES, DataFields.HEART_RATE));
+        addItem(Choices.item("Right field", "fieldRight", DataFields.NAMES, DataFields.STEPS));
+        addItem(Choices.item("Bottom field", "fieldBottom", DataFields.NAMES, DataFields.BATTERY));
     }
 }
 
@@ -20,7 +24,15 @@ class FaceSettingsDelegate extends WatchUi.Menu2InputDelegate {
     }
 
     function onSelect(item as WatchUi.MenuItem) as Void {
-        var isTheme = (item.getId() as String).equals("theme");
-        Choices.openPicker(item, isTheme ? Theme.THEME_NAMES : Theme.ACCENT_NAMES, isTheme ? 0 : Theme.BLUE);
+        var key = item.getId() as String;
+        if (key.equals("theme")) {
+            Choices.openPicker(item, Theme.THEME_NAMES, 0);
+        } else if (key.equals("accent")) {
+            Choices.openPicker(item, Theme.ACCENT_NAMES, Theme.BLUE);
+        } else {
+            var fallback = key.equals("fieldLeft") ? DataFields.HEART_RATE
+                : key.equals("fieldRight") ? DataFields.STEPS : DataFields.BATTERY;
+            Choices.openPicker(item, DataFields.NAMES, fallback);
+        }
     }
 }

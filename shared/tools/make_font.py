@@ -12,8 +12,8 @@ ROOT = Path(__file__).resolve().parent.parent  # shared/
 TTF = ROOT / "tools/fonts/JetBrainsMonoNerdFont-Medium.ttf"
 OUT = ROOT / "resources/fonts"
 
-TEXT_CHARS = " 0123456789%:-/.ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-ICON_CHARS = "".join(chr(c) for c in [
+TEXT_CHARS = " 0123456789%:-/.°ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+ICON_CHARS = "".join(dict.fromkeys(chr(c) for c in [
     0xF004,  # fa-heart
     0xEE14,  # fa-shoe_prints
     0xF240, 0xF241, 0xF242, 0xF243, 0xF244,  # fa-battery_full .. empty
@@ -21,7 +21,26 @@ ICON_CHARS = "".join(chr(c) for c in [
     0xF04B,  # fa-play
     0xF04C,  # fa-pause
     0x25CF,  # ● (recording dot)
-])
+    # lazyface data fields (lazyface/source/DataFields.mc ICONS)
+    0xF06D,  # fa-fire (calories)
+    0xF018,  # fa-road (distance)
+    0xF1AD,  # fa-building (floors)
+    0xF2F2,  # fa-stopwatch (intensity minutes)
+    0x26A1,  # oct-zap (Body Battery)
+    0xEE9C,  # fa-brain (stress)
+    0xEE9E,  # fa-car_battery (battery days)
+    0xF0F3,  # fa-bell (notifications)
+    0xE34C,  # weather-sunrise
+    0xE34D,  # weather-sunset
+    0xE350,  # weather-thermometer
+    0xEF08,  # fa-mountain (altitude)
+    0xF252,  # fa-hourglass_half (recovery)
+    0xF043,  # fa-tint (Pulse Ox)
+    0xEEAA,  # fa-lungs (respiration)
+    0xEEB2,  # fa-gauge (VO2 max)
+    0xF073,  # fa-calendar_days (next event)
+    0xEF0C,  # fa-person_running (run distance)
+]))
 
 # (resource name, pixel size)
 FONTS = [

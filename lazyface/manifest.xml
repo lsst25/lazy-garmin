@@ -4,6 +4,7 @@
             <iq:product id="fr965"/>
         </iq:products>
         <iq:permissions>
+            <iq:uses-permission id="ComplicationSubscriber"/>
         </iq:permissions>
         <iq:languages>
             <iq:language>eng</iq:language>

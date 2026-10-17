@@ -3,4 +3,8 @@
     <property id="theme" type="number">0</property>
     <!-- Index in Theme.ACCENT_NAMES: 0 Blue .. 7 Violet -->
     <property id="accent" type="number">0</property>
+    <!-- Indexes in DataFields.NAMES: 1 Heart rate, 2 Steps, 9 Battery -->
+    <property id="fieldLeft" type="number">1</property>
+    <property id="fieldRight" type="number">2</property>
+    <property id="fieldBottom" type="number">9</property>
 </properties>
