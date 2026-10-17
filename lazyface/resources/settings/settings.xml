@@ -1,0 +1,21 @@
+<!-- Phone (Connect IQ app) settings; on the watch see source/FaceSettings.mc. -->
+<settings>
+    <setting propertyKey="@Properties.theme" title="@Strings.SettingTheme">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.ThemeWave</listEntry>
+            <listEntry value="1">@Strings.ThemeDragon</listEntry>
+        </settingConfig>
+    </setting>
+    <setting propertyKey="@Properties.accent" title="@Strings.SettingAccent">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.AccentBlue</listEntry>
+            <listEntry value="1">@Strings.AccentAqua</listEntry>
+            <listEntry value="2">@Strings.AccentGreen</listEntry>
+            <listEntry value="3">@Strings.AccentYellow</listEntry>
+            <listEntry value="4">@Strings.AccentOrange</listEntry>
+            <listEntry value="5">@Strings.AccentRed</listEntry>
+            <listEntry value="6">@Strings.AccentPink</listEntry>
+            <listEntry value="7">@Strings.AccentViolet</listEntry>
+        </settingConfig>
+    </setting>
+</settings>

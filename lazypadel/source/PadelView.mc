@@ -32,7 +32,10 @@ class PadelView extends WatchUi.View {
     private const SERVE_ARC_MARGIN = 8; // degrees kept free next to the axes
 
     private const TEAM_NAMES = ["us", "them"];
-    private const TEAM_COLORS = [Kanagawa.CRYSTAL_BLUE, Kanagawa.SURIMI_ORANGE];
+
+    // Colors from the settings, reloaded on every update so changes show at once.
+    private var theme as Theme;
+    private var teamColors as Array<Number> = [0, 0];
 
     private var _match as PadelMatch;
     private var _recorder as Recorder;
@@ -42,6 +45,7 @@ class PadelView extends WatchUi.View {
 
     function initialize(match as PadelMatch, recorder as Recorder) {
         View.initialize();
+        theme = new Theme(0);
         _match = match;
         _recorder = recorder;
     }
@@ -71,6 +75,12 @@ class PadelView extends WatchUi.View {
         WatchUi.requestUpdate();
     }
 
+    private function loadColors() as Void {
+        theme = new Theme(PadelSettings.themeIndex());
+        var accents = PadelSettings.teamAccents();
+        teamColors = [theme.accent(accents[0]), theme.accent(accents[1])];
+    }
+
     function onUpdate(dc as Dc) as Void {
         var width = dc.getWidth();
         var height = dc.getHeight();
@@ -78,16 +88,18 @@ class PadelView extends WatchUi.View {
         var fontSmall = _fontSmall as FontResource;
         var center = Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER;
 
-        dc.setColor(Kanagawa.SUMI_INK_1, Kanagawa.SUMI_INK_1);
+        loadColors();
+
+        dc.setColor(theme.background, theme.background);
         dc.clear();
 
         // Finished sets
-        dc.setColor(Kanagawa.FUJI_GRAY, Graphics.COLOR_TRANSPARENT);
+        dc.setColor(theme.gray, Graphics.COLOR_TRANSPARENT);
         dc.drawText(width / 2, height * 0.15, fontSmall, getSetsText(), center);
 
         drawTeamRow(dc, 1, height * 0.345, fontMedium, fontSmall);
 
-        dc.setColor(Kanagawa.SUMI_INK_4, Graphics.COLOR_TRANSPARENT);
+        dc.setColor(theme.dim, Graphics.COLOR_TRANSPARENT);
         dc.fillRectangle(width * 0.12, height * 0.485, width * 0.76, 2);
 
         drawTeamRow(dc, 0, height * 0.625, fontMedium, fontSmall);
@@ -120,7 +132,7 @@ class PadelView extends WatchUi.View {
             dc.setAntiAlias(true);
         }
         dc.setPenWidth(SERVE_ARC_WIDTH);
-        dc.setColor(TEAM_COLORS[team], Graphics.COLOR_TRANSPARENT);
+        dc.setColor(teamColors[team], Graphics.COLOR_TRANSPARENT);
         dc.drawArc(centerX, centerY, radius, Graphics.ARC_COUNTER_CLOCKWISE,
             start + SERVE_ARC_MARGIN, start + 90 - SERVE_ARC_MARGIN);
         dc.setPenWidth(1);
@@ -133,12 +145,12 @@ class PadelView extends WatchUi.View {
     private function drawTeamRow(dc as Dc, team as Number, centerY as Numeric,
             fontMedium as FontResource, fontSmall as FontResource) as Void {
         var width = dc.getWidth();
-        var color = TEAM_COLORS[team];
+        var color = teamColors[team];
         var center = Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER;
 
         dc.setColor(color, Graphics.COLOR_TRANSPARENT);
         dc.drawText(width * 0.22, centerY - 22, fontSmall, TEAM_NAMES[team], center);
-        dc.setColor(Kanagawa.FUJI_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.setColor(theme.text, Graphics.COLOR_TRANSPARENT);
         dc.drawText(width * 0.22, centerY + 14, fontMedium, _match.games[team].toString(), center);
 
         var winner = _match.winner();
@@ -152,7 +164,7 @@ class PadelView extends WatchUi.View {
         var label = _match.pointLabel(team);
         var pointsX = width * 0.6;
         BlockText.draw(dc, label, pointsX, centerY, BLOCK_WIDTH, BLOCK_HEIGHT,
-            (advantage != null && advantage != team) ? Kanagawa.SUMI_INK_4 : color);
+            (advantage != null && advantage != team) ? theme.dim : color);
         if (advantage != null && advantage == team) {
             var offset = BlockText.width(label, BLOCK_WIDTH) / 2 + CHEVRON_GAP + CHEVRON_WIDTH / 2;
             drawChevron(dc, pointsX - offset, centerY, false, color);
@@ -191,28 +203,28 @@ class PadelView extends WatchUi.View {
             fontSmall as FontResource) as Void {
         var width = dc.getWidth();
         if (!_recorder.hasSession()) {
-            drawPill(dc, width / 2, centerY, fontSmall, ICON_PLAY.toChar().toString() + " START", Kanagawa.FUJI_GRAY);
+            drawPill(dc, width / 2, centerY, fontSmall, ICON_PLAY.toChar().toString() + " START", theme.gray, theme.darkest);
             return;
         }
 
         var recording = _recorder.isRecording();
-        var textColor = recording ? Kanagawa.FUJI_WHITE : Kanagawa.FUJI_GRAY;
+        var textColor = recording ? theme.text : theme.gray;
         var heartRate = _recorder.heartRate();
         IconText.draw(dc, width * 0.36, centerY, fontMedium,
-            recording ? ICON_HEART : ICON_PAUSE, recording ? Kanagawa.PEACH_RED : Kanagawa.FUJI_GRAY,
+            recording ? ICON_HEART : ICON_PAUSE, recording ? theme.heart : theme.gray,
             heartRate != null ? heartRate.toString() : "--", textColor);
         IconText.draw(dc, width * 0.64, centerY, fontMedium,
-            ICON_CLOCK, recording ? Kanagawa.CRYSTAL_BLUE : Kanagawa.FUJI_GRAY, getClockString(), textColor);
+            ICON_CLOCK, recording ? teamColors[0] : theme.gray, getClockString(), textColor);
     }
 
     // tmux status-left style pill.
     private function drawPill(dc as Dc, centerX as Numeric, centerY as Numeric, font as FontResource,
-            text as String, color as Number) as Void {
+            text as String, color as Number, textColor as Number) as Void {
         var pillWidth = dc.getTextWidthInPixels(text, font) + 28;
         var pillHeight = dc.getFontHeight(font) + 4;
         dc.setColor(color, Graphics.COLOR_TRANSPARENT);
         dc.fillRoundedRectangle(centerX - pillWidth / 2, centerY - pillHeight / 2, pillWidth, pillHeight, pillHeight / 2);
-        dc.setColor(Kanagawa.SUMI_INK_0, Graphics.COLOR_TRANSPARENT);
+        dc.setColor(textColor, Graphics.COLOR_TRANSPARENT);
         dc.drawText(centerX, centerY, font, text, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
     }
 

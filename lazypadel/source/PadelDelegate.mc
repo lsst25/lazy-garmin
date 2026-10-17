@@ -10,8 +10,9 @@ import Toybox.WatchUi;
 //                 the menu (like native Garmin activities)
 //   Back          undo the last point (menu when there is nothing to undo)
 //   Hold Up       menu: continue playing (match over), resume, save, discard,
-//                 exit, history, swap server, reset, golden point, touch
-// Touch (only when menu > Touch is on): tap the top half for "them", the
+//                 exit, history, swap server, reset, golden point, settings
+//                 (theme, team colors, touch)
+// Touch (only when menu > Settings > Touch is on): tap the top half for "them", the
 // bottom half for "us".
 class PadelDelegate extends WatchUi.BehaviorDelegate {
 
@@ -84,7 +85,7 @@ class PadelDelegate extends WatchUi.BehaviorDelegate {
         menu.addItem(new WatchUi.MenuItem("Swap server", null, :swapServer, null));
         menu.addItem(new WatchUi.MenuItem("Reset score", null, :reset, null));
         menu.addItem(new WatchUi.ToggleMenuItem("Golden point", null, :golden, _match.goldenPoint, null));
-        menu.addItem(new WatchUi.ToggleMenuItem("Touch", null, :touch, TouchSetting.isEnabled(), null));
+        menu.addItem(new WatchUi.MenuItem("Settings", "Theme, colors, touch", :settings, null));
         WatchUi.pushView(menu, new PadelMenuDelegate(_match, _recorder), WatchUi.SLIDE_UP);
         return true;
     }
@@ -166,8 +167,8 @@ class PadelMenuDelegate extends WatchUi.Menu2InputDelegate {
         } else if (id == :reset) {
             _match.reset();
             WatchUi.popView(WatchUi.SLIDE_DOWN);
-        } else if (id == :touch) {
-            TouchSetting.setEnabled((item as WatchUi.ToggleMenuItem).isEnabled());
+        } else if (id == :settings) {
+            PadelSettings.show();
         } else if (id == :golden) {
             _match.goldenPoint = (item as WatchUi.ToggleMenuItem).isEnabled();
         }

@@ -1,0 +1,6 @@
+<properties>
+    <!-- 0 Wave, 1 Dragon (Theme.THEME_NAMES) -->
+    <property id="theme" type="number">0</property>
+    <!-- Index in Theme.ACCENT_NAMES: 0 Blue .. 7 Violet -->
+    <property id="accent" type="number">0</property>
+</properties>
