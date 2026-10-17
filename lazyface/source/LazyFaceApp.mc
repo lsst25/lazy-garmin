@@ -23,6 +23,12 @@ class LazyFaceApp extends Application.AppBase {
         return [new FaceSettingsMenu(), new FaceSettingsDelegate()];
     }
 
+    // Redraw at once when the display enters or leaves always-on mode, so
+    // LazyFaceView.isLowPower() sees the new mode.
+    function onDisplayModeChanged() as Void {
+        WatchUi.requestUpdate();
+    }
+
     // Settings changed from the phone.
     function onSettingsChanged() as Void {
         WatchUi.requestUpdate();

@@ -178,11 +178,12 @@ function testScoreSummaryFinished(logger as Logger) as Boolean {
 function testRecorderSavesScore(logger as Logger) as Boolean {
     var match = new PadelMatch();
     var recorder = new Recorder();
-    recorder.toggle();
+    recorder.toggle(match);
     for (var i = 0; i < 6; i++) {
         winGames(match, 0, 1);
     }
-    recorder.onSetFinished(match);
+    recorder.syncLaps(match);
+    recorder.syncLaps(match); // no second lap for the same set
     winGames(match, 1, 2);
     recorder.save(match);
     return !recorder.hasSession();
@@ -198,10 +199,7 @@ function testContinuePlayingAfterMatch(logger as Logger) as Boolean {
     match.continuePlaying();
     var open = !match.isFinished() && match.winner() == null;
     winGames(match, 1, 5);
-    var result = match.addPoint(1);
-    while (result == :point) {
-        result = match.addPoint(1);
-    }
+    var result = winGamePoints(match, 1, match.addPoint(1));
     var third = result == :set && match.setScores.size() == 3 && match.scoreSummary().equals("6-0 6-0 0-6");
     return open && third;
 }
@@ -229,4 +227,43 @@ function testMatchHistoryAddRemove(logger as Logger) as Boolean {
     var hasResult = detail.find(" · won · 1:12") != null; // sets 1-0, 72 minutes
     MatchHistory.remove(entries[0][0] as Number);
     return first && hasResult && MatchHistory.getAll().size() == 0;
+}
+
+// Free play with 9 sets: the score is longer than the 32-byte FIT field and
+// must be cut, not crash the save. Laps close lazily, once per set.
+(:test)
+function testRecorderLongFreePlayScore(logger as Logger) as Boolean {
+    var match = new PadelMatch();
+    var recorder = new Recorder();
+    recorder.toggle(match);
+    winGames(match, 0, 12);
+    match.continuePlaying();
+    for (var set = 0; set < 7; set++) {
+        recorder.syncLaps(match);
+        winGames(match, set % 2, 6);
+    }
+    logger.debug("score: " + match.scoreSummary() + " (" + match.scoreSummary().length() + " chars)");
+    recorder.save(match);
+    return match.setScores.size() == 9 && match.scoreSummary().length() > 31 && !recorder.hasSession();
+}
+
+// Recording started mid-match, and an undo across a closed lap: neither may
+// crash, and save must still work.
+(:test)
+function testRecorderMidMatchStartAndUndo(logger as Logger) as Boolean {
+    var match = new PadelMatch();
+    winGames(match, 0, 6);              // set 1 before the recording
+    var recorder = new Recorder();
+    recorder.toggle(match);
+    recorder.syncLaps(match);           // no lap for set 1
+    winGames(match, 1, 6);              // set 2
+    recorder.syncLaps(match);           // lap for set 2
+    match.addPoint(0);
+    match.undo();
+    match.undo();                       // back into set 2
+    recorder.syncLaps(match);           // clamps, no lap
+    winPoints(match, 1, 1);             // set 2 won again
+    recorder.syncLaps(match);
+    recorder.save(match);
+    return match.setScores.size() == 2 && !recorder.hasSession();
 }

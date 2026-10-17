@@ -20,7 +20,6 @@ ICON_CHARS = "".join(dict.fromkeys(chr(c) for c in [
     0xF017,  # fa-clock_o
     0xF04B,  # fa-play
     0xF04C,  # fa-pause
-    0x25CF,  # ● (recording dot)
     # lazyface data fields (lazyface/source/DataFields.mc ICONS)
     0xF06D,  # fa-fire (calories)
     0xF018,  # fa-road (distance)
@@ -69,8 +68,11 @@ def build(name: str, size: int) -> None:
             row_height = 0
         # Connect IQ clips each glyph to its advance width, and Nerd Font icons
         # are wider than one cell, so never let the advance be narrower than the glyph.
-        advance = max(round(font.getlength(ch)), left + width)
-        glyphs.append((ch, x, y, width, height, left, top, advance))
+        # A negative xoffset is written as 0 (the glyph shifts right), so the
+        # advance must cover the glyph from there.
+        xoffset = max(left, 0)
+        advance = max(round(font.getlength(ch)), xoffset + width)
+        glyphs.append((ch, x, y, width, height, left, top, advance, xoffset))
         x += width + PADDING
         row_height = max(row_height, height)
 
@@ -80,7 +82,7 @@ def build(name: str, size: int) -> None:
 
     image = Image.new("L", (ATLAS_WIDTH, atlas_height), 0)
     draw = ImageDraw.Draw(image)
-    for ch, gx, gy, _w, _h, left, top, _adv in glyphs:
+    for ch, gx, gy, _w, _h, left, top, _adv, _xoff in glyphs:
         draw.text((gx - left, gy - top), ch, font=font, fill=255, anchor="la")
     image.save(OUT / f"{name}.png")
 
@@ -92,10 +94,10 @@ def build(name: str, size: int) -> None:
         f'page id=0 file="{name}.png"',
         f"chars count={len(glyphs)}",
     ]
-    for ch, gx, gy, w, h, left, top, adv in glyphs:
+    for ch, gx, gy, w, h, left, top, adv, xoffset in glyphs:
         lines.append(
             f"char id={ord(ch)} x={gx} y={gy} width={w} height={h} "
-            f"xoffset={left} yoffset={top} xadvance={adv} page=0 chnl=15"
+            f"xoffset={xoffset} yoffset={top} xadvance={adv} page=0 chnl=15"
         )
     (OUT / f"{name}.fnt").write_text("\n".join(lines) + "\n")
     print(f"{name}: {len(glyphs)} glyphs, atlas {ATLAS_WIDTH}x{atlas_height}")

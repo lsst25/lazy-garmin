@@ -23,13 +23,25 @@ class LazyFaceView extends WatchUi.WatchFace {
         _burnInProtection = (settings has :requiresBurnInProtection) && settings.requiresBurnInProtection;
     }
 
+    // AMOLED always-on: the system display mode is the reliable signal (API
+    // 5.x); onEnterSleep/onExitSleep is the fallback on older firmware.
+    private function isLowPower() as Boolean {
+        if (!_burnInProtection) {
+            return false;
+        }
+        if (System has :getDisplayMode) {
+            return System.getDisplayMode() != System.DISPLAY_MODE_HIGH_POWER;
+        }
+        return !_isAwake;
+    }
+
     function onLayout(dc as Dc) as Void {
         _fontMedium = WatchUi.loadResource(Rez.Fonts.TextMedium) as FontResource;
         _fontSmall = WatchUi.loadResource(Rez.Fonts.TextSmall) as FontResource;
     }
 
     function onUpdate(dc as Dc) as Void {
-        if (!_isAwake && _burnInProtection) {
+        if (isLowPower()) {
             drawLowPower(dc);
             return;
         }
@@ -93,14 +105,7 @@ class LazyFaceView extends WatchUi.WatchFace {
         }
         var text = DataFields.icon(field).toChar().toString() + " " + DataFields.value(field);
         var lowBattery = field == DataFields.BATTERY && System.getSystemStats().battery < 20;
-
-        var pillWidth = dc.getTextWidthInPixels(text, font) + 28;
-        var pillHeight = dc.getFontHeight(font) + 4;
-        dc.setColor(lowBattery ? Theme.LOW_BATTERY : accent, Graphics.COLOR_TRANSPARENT);
-        dc.fillRoundedRectangle(centerX - pillWidth / 2, centerY - pillHeight / 2, pillWidth, pillHeight, pillHeight / 2);
-
-        dc.setColor(theme.darkest, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, centerY, font, text, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        Pill.draw(dc, centerX, centerY, font, text, lowBattery ? Theme.LOW_BATTERY : accent, theme.darkest);
     }
 
     // tmux style: zero-padded 24-hour time, or unpadded 12-hour time.
@@ -111,13 +116,10 @@ class LazyFaceView extends WatchUi.WatchFace {
         var clockTime = System.getClockTime();
         var hour = clockTime.hour;
         if (System.getDeviceSettings().is24Hour) {
+            // tmux style: zero-padded 24-hour time
             return Lang.format("$1$:$2$", [hour.format("%02d"), clockTime.min.format("%02d")]);
         }
-        hour = hour % 12;
-        if (hour == 0) {
-            hour = 12;
-        }
-        return Lang.format("$1$:$2$", [hour, clockTime.min.format("%02d")]);
+        return Lang.format("$1$:$2$", [Clock.displayHour(hour), clockTime.min.format("%02d")]);
     }
 
     private function getDateString() as String {

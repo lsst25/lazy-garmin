@@ -2,11 +2,15 @@ import Toybox.Activity;
 import Toybox.ActivityMonitor;
 import Toybox.Complications;
 import Toybox.Lang;
+import Toybox.Math;
 import Toybox.System;
 
 // Data the face can show in its field slots. The index in NAMES is what the
 // "fieldLeft" / "fieldRight" / "fieldBottom" properties store, so only append
 // to these lists. Most values come from Garmin's system complications.
+// When you append a field, also add its icon to shared/tools/make_font.py
+// ICON_CHARS, a FieldN string to resources/strings/strings.xml and a
+// listEntry to each of the 3 field lists in resources/settings/settings.xml.
 module DataFields {
 
     enum {
@@ -91,7 +95,7 @@ module DataFields {
             text = altitude(complication(Complications.COMPLICATION_TYPE_ALTITUDE));
         } else if (field == RECOVERY) {
             var minutes = complication(Complications.COMPLICATION_TYPE_RECOVERY_TIME);
-            text = minutes != null ? ((minutes as Number) / 60).format("%d") + "h" : null;
+            text = minutes != null ? (((minutes as Number) + 59) / 60).format("%d") + "h" : null; // round up
         } else if (field == PULSE_OX) {
             var spo2 = complication(Complications.COMPLICATION_TYPE_PULSE_OX);
             text = spo2 != null ? format(spo2) + "%" : null;
@@ -100,15 +104,11 @@ module DataFields {
         } else if (field == VO2MAX) {
             text = format(complication(Complications.COMPLICATION_TYPE_VO2MAX_RUN));
         } else if (field == NEXT_EVENT) {
-            if (Complications has :COMPLICATION_TYPE_CALENDAR_EVENTS) {
-                var event = complication(Complications.COMPLICATION_TYPE_CALENDAR_EVENTS);
-                text = event != null ? event.toString() : null;
-            }
+            var event = complication(Complications.COMPLICATION_TYPE_CALENDAR_EVENTS);
+            text = event != null ? event.toString() : null;
         } else if (field == RUN_DISTANCE) {
-            if (Complications has :COMPLICATION_TYPE_WEEKLY_RUN_DISTANCE) {
-                var meters = complication(Complications.COMPLICATION_TYPE_WEEKLY_RUN_DISTANCE);
-                text = meters != null ? distance((meters as Numeric).toFloat()) : null;
-            }
+            var meters = complication(Complications.COMPLICATION_TYPE_WEEKLY_RUN_DISTANCE);
+            text = meters != null ? distance((meters as Numeric).toFloat()) : null;
         }
         return text != null ? text : "--";
     }
@@ -160,7 +160,7 @@ module DataFields {
         if (System.getDeviceSettings().temperatureUnits == System.UNIT_STATUTE) {
             degrees = degrees * 9 / 5 + 32;
         }
-        return degrees.format("%d") + "°";
+        return Math.round(degrees).toNumber().format("%d") + "°";
     }
 
     // Meters in, m or ft (watch setting) out.
@@ -170,9 +170,9 @@ module DataFields {
         }
         var value = (meters as Numeric).toFloat();
         if (System.getDeviceSettings().elevationUnits == System.UNIT_STATUTE) {
-            return (value * 3.28084).format("%d") + "ft";
+            return Math.round(value * 3.28084).toNumber().format("%d") + "ft";
         }
-        return value.format("%d") + "m";
+        return Math.round(value).toNumber().format("%d") + "m";
     }
 
     // Seconds since midnight in, watch-formatted time out.
@@ -181,13 +181,6 @@ module DataFields {
             return null;
         }
         var minutes = (seconds as Number) / 60;
-        var hour = minutes / 60;
-        if (!System.getDeviceSettings().is24Hour) {
-            hour = hour % 12;
-            if (hour == 0) {
-                hour = 12;
-            }
-        }
-        return hour.toString() + ":" + (minutes % 60).format("%02d");
+        return Clock.displayHour(minutes / 60).toString() + ":" + (minutes % 60).format("%02d");
     }
 }

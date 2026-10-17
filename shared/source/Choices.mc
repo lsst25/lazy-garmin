@@ -13,19 +13,35 @@ module Choices {
     }
 
     // "Theme / Wave": label with the current choice as the sub-label.
-    function item(label as String, key as String, names as Array<String>, fallback as Number) as WatchUi.MenuItem {
-        return new WatchUi.MenuItem(label, names[index(key, names.size(), fallback)], key, null);
+    function item(label as String, key as String, names as Array<String>, fallback as Number) as ChoiceItem {
+        return new ChoiceItem(label, key, names, fallback);
     }
 
     // Opens the list of names for the item; picking one saves it.
-    function openPicker(item as WatchUi.MenuItem, names as Array<String>, fallback as Number) as Void {
+    function openPicker(item as ChoiceItem) as Void {
         var key = item.getId() as String;
+        var names = item.names;
+        var fallback = item.fallback;
         var picker = new WatchUi.Menu2({ :title => item.getLabel() });
         for (var i = 0; i < names.size(); i++) {
             picker.addItem(new WatchUi.MenuItem(names[i], null, i, null));
         }
         picker.setFocus(index(key, names.size(), fallback));
         WatchUi.pushView(picker, new ChoicePickerDelegate(key, item), WatchUi.SLIDE_LEFT);
+    }
+}
+
+// A menu item for one choice setting: knows its names and default, so a
+// settings delegate only has to call Choices.openPicker(item).
+class ChoiceItem extends WatchUi.MenuItem {
+
+    var names as Array<String>;
+    var fallback as Number;
+
+    function initialize(label as String, key as String, names as Array<String>, fallback as Number) {
+        MenuItem.initialize(label, names[Choices.index(key, names.size(), fallback)], key, null);
+        self.names = names;
+        self.fallback = fallback;
     }
 }
 

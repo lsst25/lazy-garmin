@@ -31,11 +31,17 @@ class PadelView extends WatchUi.View {
     private const SERVE_ARC_WIDTH = 16;
     private const SERVE_ARC_MARGIN = 8; // degrees kept free next to the axes
 
+    // Set label in the divider: center as a fraction of the width, and the
+    // space between the label and the line on each side.
+    private const DIVIDER_LABEL_X = 0.33;
+    private const DIVIDER_LABEL_GAP = 8;
+
     private const TEAM_NAMES = ["us", "them"];
 
-    // Colors from the settings, reloaded on every update so changes show at once.
-    private var theme as Theme;
-    private var teamColors as Array<Number> = [0, 0];
+    // Colors from the settings, reloaded in onShow so changes show on return
+    // from the settings menu.
+    private var _theme as Theme;
+    private var _teamColors as Array<Number> = [0, 0];
 
     private var _match as PadelMatch;
     private var _recorder as Recorder;
@@ -45,7 +51,7 @@ class PadelView extends WatchUi.View {
 
     function initialize(match as PadelMatch, recorder as Recorder) {
         View.initialize();
-        theme = new Theme(0);
+        _theme = new Theme(0);
         _match = match;
         _recorder = recorder;
     }
@@ -57,6 +63,7 @@ class PadelView extends WatchUi.View {
 
     // Redraw every second for the clock and heart rate.
     function onShow() as Void {
+        loadColors();
         TouchSetting.apply();
         var timer = new Timer.Timer();
         timer.start(method(:onTick), 1000, true);
@@ -76,9 +83,9 @@ class PadelView extends WatchUi.View {
     }
 
     private function loadColors() as Void {
-        theme = new Theme(PadelSettings.themeIndex());
+        _theme = new Theme(PadelSettings.themeIndex());
         var accents = PadelSettings.teamAccents();
-        teamColors = [theme.accent(accents[0]), theme.accent(accents[1])];
+        _teamColors = [_theme.accent(accents[0]), _theme.accent(accents[1])];
     }
 
     function onUpdate(dc as Dc) as Void {
@@ -88,19 +95,16 @@ class PadelView extends WatchUi.View {
         var fontSmall = _fontSmall as FontResource;
         var center = Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER;
 
-        loadColors();
-
-        dc.setColor(theme.background, theme.background);
+        dc.setColor(_theme.background, _theme.background);
         dc.clear();
 
         // Finished sets
-        dc.setColor(theme.gray, Graphics.COLOR_TRANSPARENT);
+        dc.setColor(_theme.gray, Graphics.COLOR_TRANSPARENT);
         dc.drawText(width / 2, height * 0.15, fontSmall, getSetsText(), center);
 
         drawTeamRow(dc, 1, height * 0.345, fontMedium, fontSmall);
 
-        dc.setColor(theme.dim, Graphics.COLOR_TRANSPARENT);
-        dc.fillRectangle(width * 0.12, height * 0.485, width * 0.76, 2);
+        drawDivider(dc, height * 0.485, fontSmall);
 
         drawTeamRow(dc, 0, height * 0.625, fontMedium, fontSmall);
 
@@ -132,7 +136,7 @@ class PadelView extends WatchUi.View {
             dc.setAntiAlias(true);
         }
         dc.setPenWidth(SERVE_ARC_WIDTH);
-        dc.setColor(teamColors[team], Graphics.COLOR_TRANSPARENT);
+        dc.setColor(_teamColors[team], Graphics.COLOR_TRANSPARENT);
         dc.drawArc(centerX, centerY, radius, Graphics.ARC_COUNTER_CLOCKWISE,
             start + SERVE_ARC_MARGIN, start + 90 - SERVE_ARC_MARGIN);
         dc.setPenWidth(1);
@@ -145,13 +149,13 @@ class PadelView extends WatchUi.View {
     private function drawTeamRow(dc as Dc, team as Number, centerY as Numeric,
             fontMedium as FontResource, fontSmall as FontResource) as Void {
         var width = dc.getWidth();
-        var color = teamColors[team];
+        var color = _teamColors[team];
         var center = Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER;
 
         dc.setColor(color, Graphics.COLOR_TRANSPARENT);
         dc.drawText(width * 0.22, centerY - 22, fontSmall, TEAM_NAMES[team], center);
-        dc.setColor(theme.text, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(width * 0.22, centerY + 14, fontMedium, _match.games[team].toString(), center);
+        dc.setColor(_theme.text, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(width * 0.22, centerY + 14, fontMedium, _match.lastSetGames()[team].toString(), center);
 
         var winner = _match.winner();
         if (winner != null) {
@@ -164,7 +168,7 @@ class PadelView extends WatchUi.View {
         var label = _match.pointLabel(team);
         var pointsX = width * 0.6;
         BlockText.draw(dc, label, pointsX, centerY, BLOCK_WIDTH, BLOCK_HEIGHT,
-            (advantage != null && advantage != team) ? theme.dim : color);
+            (advantage != null && advantage != team) ? _theme.dim : color);
         if (advantage != null && advantage == team) {
             var offset = BlockText.width(label, BLOCK_WIDTH) / 2 + CHEVRON_GAP + CHEVRON_WIDTH / 2;
             drawChevron(dc, pointsX - offset, centerY, false, color);
@@ -203,54 +207,57 @@ class PadelView extends WatchUi.View {
             fontSmall as FontResource) as Void {
         var width = dc.getWidth();
         if (!_recorder.hasSession()) {
-            drawPill(dc, width / 2, centerY, fontSmall, ICON_PLAY.toChar().toString() + " START", theme.gray, theme.darkest);
+            Pill.draw(dc, width / 2, centerY, fontSmall, ICON_PLAY.toChar().toString() + " START", _theme.gray, _theme.darkest);
             return;
         }
 
         var recording = _recorder.isRecording();
-        var textColor = recording ? theme.text : theme.gray;
+        var textColor = recording ? _theme.text : _theme.gray;
         var heartRate = _recorder.heartRate();
         IconText.draw(dc, width * 0.36, centerY, fontMedium,
-            recording ? ICON_HEART : ICON_PAUSE, recording ? theme.heart : theme.gray,
+            recording ? ICON_HEART : ICON_PAUSE, recording ? _theme.heart : _theme.gray,
             heartRate != null ? heartRate.toString() : "--", textColor);
         IconText.draw(dc, width * 0.64, centerY, fontMedium,
-            ICON_CLOCK, recording ? teamColors[0] : theme.gray, getClockString(), textColor);
+            ICON_CLOCK, recording ? _teamColors[0] : _theme.gray, getClockString(), textColor);
     }
 
-    // tmux status-left style pill.
-    private function drawPill(dc as Dc, centerX as Numeric, centerY as Numeric, font as FontResource,
-            text as String, color as Number, textColor as Number) as Void {
-        var pillWidth = dc.getTextWidthInPixels(text, font) + 28;
-        var pillHeight = dc.getFontHeight(font) + 4;
-        dc.setColor(color, Graphics.COLOR_TRANSPARENT);
-        dc.fillRoundedRectangle(centerX - pillWidth / 2, centerY - pillHeight / 2, pillWidth, pillHeight, pillHeight / 2);
-        dc.setColor(textColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, centerY, font, text, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
-    }
-
-    // "6-4  3-6", plus the set being played: "set 2", or "tie-break".
+    // Finished sets: "6-4  3-6".
     private function getSetsText() as String {
         var text = "";
         for (var i = 0; i < _match.setScores.size(); i++) {
             var score = _match.setScores[i];
-            text += score[0].toString() + "-" + score[1].toString() + "  ";
+            text += (i > 0 ? "  " : "") + score[0].toString() + "-" + score[1].toString();
         }
-        if (_match.isFinished()) {
-            return text;
-        }
-        return text + (_match.tiebreak ? "tie-break" : "set " + (_match.setScores.size() + 1).toString());
+        return text;
     }
 
-    // Current time, in the watch's 12/24-hour format.
-    private function getClockString() as String {
-        var clockTime = System.getClockTime();
-        var hour = clockTime.hour;
-        if (!System.getDeviceSettings().is24Hour) {
-            hour = hour % 12;
-            if (hour == 0) {
-                hour = 12;
-            }
+    // Line between the teams, with the set being played in it, a little left
+    // of the center: "──set 3──────" (or "tie-break"). No label once the match is over.
+    private function drawDivider(dc as Dc, centerY as Numeric, font as FontResource) as Void {
+        var left = dc.getWidth() * 0.12;
+        var right = dc.getWidth() * 0.88;
+        var y = centerY - 1;
+        dc.setColor(_theme.dim, Graphics.COLOR_TRANSPARENT);
+        if (_match.isFinished()) {
+            dc.fillRectangle(left, y, right - left, 2);
+            return;
         }
-        return Lang.format("$1$:$2$", [hour, clockTime.min.format("%02d")]);
+
+        var label = _match.tiebreak ? "tie-break" : "set " + (_match.setScores.size() + 1).toString();
+        var labelX = dc.getWidth() * DIVIDER_LABEL_X;
+        var halfGap = dc.getTextWidthInPixels(label, font) / 2 + DIVIDER_LABEL_GAP;
+        dc.fillRectangle(left, y, labelX - halfGap - left, 2);
+        dc.fillRectangle(labelX + halfGap, y, right - labelX - halfGap, 2);
+        dc.setColor(_theme.gray, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(labelX, centerY, font, label, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+    }
+
+    // Current time, in the watch's 12/24-hour format (or `make run TIME=..`).
+    private function getClockString() as String {
+        if (DEBUG_TIME != null) {
+            return DEBUG_TIME as String;
+        }
+        var clockTime = System.getClockTime();
+        return Lang.format("$1$:$2$", [Clock.displayHour(clockTime.hour), clockTime.min.format("%02d")]);
     }
 }

@@ -94,10 +94,6 @@ class PadelMatch {
         return :point;
     }
 
-    function canUndo() as Boolean {
-        return _history.size() > 0;
-    }
-
     function undo() as Boolean {
         if (_history.size() == 0) {
             return false;

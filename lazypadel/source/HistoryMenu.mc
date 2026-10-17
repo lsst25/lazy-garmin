@@ -9,7 +9,7 @@ module HistoryMenu {
         var menu = new WatchUi.Menu2({ :title => "History" });
         var entries = MatchHistory.getAll();
         if (entries.size() == 0) {
-            menu.addItem(new WatchUi.MenuItem("No matches yet", "Save & exit adds one", :empty, null));
+            menu.addItem(emptyItem());
         } else {
             for (var i = 0; i < entries.size(); i++) {
                 var entry = entries[i];
@@ -19,6 +19,10 @@ module HistoryMenu {
             menu.addItem(new WatchUi.MenuItem("Delete all", null, :deleteAll, null));
         }
         WatchUi.pushView(menu, new HistoryMenuDelegate(menu), WatchUi.SLIDE_LEFT);
+    }
+
+    function emptyItem() as WatchUi.MenuItem {
+        return new WatchUi.MenuItem("No matches yet", "Save & exit adds one", :empty, null);
     }
 }
 
@@ -67,7 +71,7 @@ class DeleteMatchDelegate extends WatchUi.ConfirmationDelegate {
             if (MatchHistory.getAll().size() == 0) {
                 // Only "Delete all" is left: show the empty state instead.
                 _menu.deleteItem(0);
-                _menu.addItem(new WatchUi.MenuItem("No matches yet", "Save & exit adds one", :empty, null));
+                _menu.addItem(HistoryMenu.emptyItem());
             }
         }
         return true;

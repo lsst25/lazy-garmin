@@ -2,7 +2,7 @@ import Toybox.Graphics;
 import Toybox.Lang;
 
 // Big "pixel" text in the style of tmux clock-mode (window-clock.c).
-// Supports 0-9, ':', '-', 'A' and 'D'.
+// Supports 0-9, ':' and '-'; other characters are not supported.
 //
 // Unlike tmux, empty glyph columns are trimmed (so "1" and ":" are one block
 // wide) and ':' gets the same gap on both sides.
@@ -23,18 +23,12 @@ module BlockText {
     ];
     const COLON = [0x00, 0x04, 0x00, 0x04, 0x00];
     const DASH = [0x00, 0x00, 0x0E, 0x00, 0x00];
-    const LETTER_A = [0x1F, 0x11, 0x1F, 0x11, 0x11];
-    const LETTER_D = [0x1E, 0x11, 0x11, 0x11, 0x1E];
 
     function glyphFor(ch as Char) as Array<Number> {
         if (ch == ':') {
             return COLON;
         } else if (ch == '-') {
             return DASH;
-        } else if (ch == 'A') {
-            return LETTER_A;
-        } else if (ch == 'D') {
-            return LETTER_D;
         }
         return DIGITS[ch.toNumber() - '0'.toNumber()];
     }

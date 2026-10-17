@@ -37,11 +37,8 @@ class PadelSettingsDelegate extends WatchUi.Menu2InputDelegate {
         var id = item.getId();
         if (id == :touch) {
             TouchSetting.setEnabled((item as WatchUi.ToggleMenuItem).isEnabled());
-        } else if ((id as String).equals("theme")) {
-            Choices.openPicker(item, Theme.THEME_NAMES, 0);
-        } else {
-            Choices.openPicker(item, Theme.ACCENT_NAMES,
-                (id as String).equals("usColor") ? Theme.BLUE : Theme.ORANGE);
+        } else if (item instanceof ChoiceItem) {
+            Choices.openPicker(item);
         }
     }
 }

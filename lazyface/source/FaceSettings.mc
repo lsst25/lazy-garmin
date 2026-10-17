@@ -24,15 +24,6 @@ class FaceSettingsDelegate extends WatchUi.Menu2InputDelegate {
     }
 
     function onSelect(item as WatchUi.MenuItem) as Void {
-        var key = item.getId() as String;
-        if (key.equals("theme")) {
-            Choices.openPicker(item, Theme.THEME_NAMES, 0);
-        } else if (key.equals("accent")) {
-            Choices.openPicker(item, Theme.ACCENT_NAMES, Theme.BLUE);
-        } else {
-            var fallback = key.equals("fieldLeft") ? DataFields.HEART_RATE
-                : key.equals("fieldRight") ? DataFields.STEPS : DataFields.BATTERY;
-            Choices.openPicker(item, DataFields.NAMES, fallback);
-        }
+        Choices.openPicker(item as ChoiceItem);
     }
 }

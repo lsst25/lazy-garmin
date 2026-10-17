@@ -48,11 +48,11 @@ class PadelDelegate extends WatchUi.BehaviorDelegate {
 
     function onSelect() as Boolean {
         if (_recorder.isRecording()) {
-            _recorder.toggle();
+            _recorder.toggle(_match);
             buzz(300);
             return onMenu();
         }
-        _recorder.toggle();
+        _recorder.toggle(_match);
         buzz(150);
         WatchUi.requestUpdate();
         return true;
@@ -91,35 +91,22 @@ class PadelDelegate extends WatchUi.BehaviorDelegate {
     }
 
     private function addPoint(team as Number) as Boolean {
-        var result = _match.addPoint(team);
-        if (result == :set) {
-            _recorder.onSetFinished(_match); // one lap per set
+        if (!_match.isFinished()) {
+            // Closes the lap of a set that ended on the previous point. Doing it
+            // here, not at the set point, keeps a set point that is undone before
+            // the next point out of the FIT file.
+            _recorder.syncLaps(_match);
         }
+        var result = _match.addPoint(team);
         if (result == :point) {
             buzz(40);
         } else if (result == :game) {
             buzz(200);
-        } else if (result == :set) {
+        } else if (result == :set || result == :match) {
             buzz(600);
-        } else if (result == :match) {
-            buzzMatchOver();
         }
         WatchUi.requestUpdate();
         return true;
-    }
-
-    // Match over: three strong pulses, distinct from the single set buzz.
-    // Vibration only, no tone.
-    private function buzzMatchOver() as Void {
-        if (Attention has :vibrate) {
-            Attention.vibrate([
-                new Attention.VibeProfile(100, 400),
-                new Attention.VibeProfile(0, 200),
-                new Attention.VibeProfile(100, 400),
-                new Attention.VibeProfile(0, 200),
-                new Attention.VibeProfile(100, 400)
-            ]);
-        }
     }
 
     private function buzz(durationMs as Number) as Void {
@@ -144,11 +131,12 @@ class PadelMenuDelegate extends WatchUi.Menu2InputDelegate {
         var id = item.getId();
         if (id == :continue) {
             _match.continuePlaying();
-            // The final set never got its own lap; close it now.
-            _recorder.onSetFinished(_match);
+            if (_recorder.hasSession() && !_recorder.isRecording()) {
+                _recorder.toggle(_match); // Start paused the recording to open this menu
+            }
             WatchUi.popView(WatchUi.SLIDE_DOWN);
         } else if (id == :resume) {
-            _recorder.toggle();
+            _recorder.toggle(_match);
             WatchUi.popView(WatchUi.SLIDE_DOWN);
         } else if (id == :exit) {
             System.exit();
@@ -159,18 +147,47 @@ class PadelMenuDelegate extends WatchUi.Menu2InputDelegate {
             _recorder.save(_match);
             System.exit();
         } else if (id == :discard) {
-            _recorder.discard();
-            System.exit();
+            WatchUi.pushView(new WatchUi.Confirmation("Discard activity?"),
+                new ConfirmDelegate(method(:discardAndExit)), WatchUi.SLIDE_UP);
         } else if (id == :swapServer) {
             _match.swapServer();
             WatchUi.popView(WatchUi.SLIDE_DOWN);
         } else if (id == :reset) {
-            _match.reset();
-            WatchUi.popView(WatchUi.SLIDE_DOWN);
+            WatchUi.pushView(new WatchUi.Confirmation("Reset score?"),
+                new ConfirmDelegate(method(:resetScore)), WatchUi.SLIDE_UP);
         } else if (id == :settings) {
             PadelSettings.show();
         } else if (id == :golden) {
             _match.goldenPoint = (item as WatchUi.ToggleMenuItem).isEnabled();
         }
+    }
+
+    function discardAndExit() as Void {
+        _recorder.discard();
+        System.exit();
+    }
+
+    function resetScore() as Void {
+        _match.reset();
+        _recorder.onMatchReset();
+        WatchUi.popView(WatchUi.SLIDE_DOWN); // close the menu under the confirmation
+    }
+}
+
+// Runs the action when the user confirms with "yes".
+class ConfirmDelegate extends WatchUi.ConfirmationDelegate {
+
+    private var _action as Method() as Void;
+
+    function initialize(action as Method() as Void) {
+        ConfirmationDelegate.initialize();
+        _action = action;
+    }
+
+    function onResponse(response as WatchUi.Confirm) as Boolean {
+        if (response == WatchUi.CONFIRM_YES) {
+            _action.invoke();
+        }
+        return true;
     }
 }

@@ -50,7 +50,7 @@ module MatchHistory {
     function detailLabel(entry as Array) as String {
         var info = Gregorian.info(new Time.Moment(entry[0] as Number), Time.FORMAT_MEDIUM);
         var date = Lang.format("$1$ $2$ $3$ $4$:$5$",
-            [info.day_of_week, info.day, info.month, info.hour, info.min.format("%02d")]).toLower();
+            [info.day_of_week, info.day, info.month, Clock.displayHour(info.hour as Number), info.min.format("%02d")]).toLower();
 
         var setsUs = entry[2] as Number;
         var setsThem = entry[3] as Number;
