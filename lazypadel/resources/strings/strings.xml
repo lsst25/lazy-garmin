@@ -1,0 +1,14 @@
+<strings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://developer.garmin.com/downloads/connect-iq/resources.xsd">
+    <string id="AppName">lazypadel</string>
+
+    <!-- FIT field labels shown in Garmin Connect -->
+    <string id="FitScore">Score</string>
+    <string id="FitSetScore">Set score</string>
+    <string id="FitSetsWon">Sets won</string>
+    <string id="FitSetsLost">Sets lost</string>
+    <string id="FitGamesWon">Games won</string>
+    <string id="FitGamesLost">Games lost</string>
+    <string id="FitSets">sets</string>
+    <string id="FitGames">games</string>
+    <string id="FitNoUnit"> </string>
+</strings>

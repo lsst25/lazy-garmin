@@ -1,0 +1,175 @@
+import Toybox.Attention;
+import Toybox.Lang;
+import Toybox.System;
+import Toybox.WatchUi;
+
+// Buttons (fr965):
+//   Up            point for "them" (top row)
+//   Down          point for "us" (bottom row)
+//   Start         start / resume recording; while recording: pause and open
+//                 the menu (like native Garmin activities)
+//   Back          undo the last point (menu when there is nothing to undo)
+//   Hold Up       menu: continue playing (match over), resume, save, discard,
+//                 exit, history, swap server, reset, golden point, touch
+// Touch (only when menu > Touch is on): tap the top half for "them", the
+// bottom half for "us".
+class PadelDelegate extends WatchUi.BehaviorDelegate {
+
+    private var _match as PadelMatch;
+    private var _recorder as Recorder;
+
+    function initialize(match as PadelMatch, recorder as Recorder) {
+        BehaviorDelegate.initialize();
+        _match = match;
+        _recorder = recorder;
+    }
+
+    function onPreviousPage() as Boolean {
+        return addPoint(1);
+    }
+
+    function onNextPage() as Boolean {
+        return addPoint(0);
+    }
+
+    // Swipes would otherwise become onNextPage / onPreviousPage (= points).
+    function onSwipe(event as WatchUi.SwipeEvent) as Boolean {
+        return !TouchSetting.isEnabled(); // true = swallow
+    }
+
+    function onTap(event as WatchUi.ClickEvent) as Boolean {
+        if (!TouchSetting.isEnabled()) {
+            return true; // swallow the tap (otherwise it may become onSelect)
+        }
+        var y = event.getCoordinates()[1];
+        return addPoint(y < System.getDeviceSettings().screenHeight / 2 ? 1 : 0);
+    }
+
+    function onSelect() as Boolean {
+        if (_recorder.isRecording()) {
+            _recorder.toggle();
+            buzz(300);
+            return onMenu();
+        }
+        _recorder.toggle();
+        buzz(150);
+        WatchUi.requestUpdate();
+        return true;
+    }
+
+    function onBack() as Boolean {
+        if (_match.undo()) {
+            buzz(40);
+            WatchUi.requestUpdate();
+            return true;
+        }
+        return onMenu();
+    }
+
+    function onMenu() as Boolean {
+        var menu = new WatchUi.Menu2({ :title => "lazypadel" });
+        if (_match.isFinished()) {
+            menu.addItem(new WatchUi.MenuItem("Continue playing", null, :continue, null));
+        }
+        if (_recorder.hasSession()) {
+            if (!_recorder.isRecording()) {
+                menu.addItem(new WatchUi.MenuItem("Resume", null, :resume, null));
+            }
+            menu.addItem(new WatchUi.MenuItem("Save & exit", null, :save, null));
+            menu.addItem(new WatchUi.MenuItem("Discard & exit", null, :discard, null));
+        } else {
+            menu.addItem(new WatchUi.MenuItem("Exit", null, :exit, null));
+        }
+        menu.addItem(new WatchUi.MenuItem("History", null, :history, null));
+        menu.addItem(new WatchUi.MenuItem("Swap server", null, :swapServer, null));
+        menu.addItem(new WatchUi.MenuItem("Reset score", null, :reset, null));
+        menu.addItem(new WatchUi.ToggleMenuItem("Golden point", null, :golden, _match.goldenPoint, null));
+        menu.addItem(new WatchUi.ToggleMenuItem("Touch", null, :touch, TouchSetting.isEnabled(), null));
+        WatchUi.pushView(menu, new PadelMenuDelegate(_match, _recorder), WatchUi.SLIDE_UP);
+        return true;
+    }
+
+    private function addPoint(team as Number) as Boolean {
+        var result = _match.addPoint(team);
+        if (result == :set) {
+            _recorder.onSetFinished(_match); // one lap per set
+        }
+        if (result == :point) {
+            buzz(40);
+        } else if (result == :game) {
+            buzz(200);
+        } else if (result == :set) {
+            buzz(600);
+        } else if (result == :match) {
+            buzzMatchOver();
+        }
+        WatchUi.requestUpdate();
+        return true;
+    }
+
+    // Match over: three strong pulses, distinct from the single set buzz.
+    // Vibration only, no tone.
+    private function buzzMatchOver() as Void {
+        if (Attention has :vibrate) {
+            Attention.vibrate([
+                new Attention.VibeProfile(100, 400),
+                new Attention.VibeProfile(0, 200),
+                new Attention.VibeProfile(100, 400),
+                new Attention.VibeProfile(0, 200),
+                new Attention.VibeProfile(100, 400)
+            ]);
+        }
+    }
+
+    private function buzz(durationMs as Number) as Void {
+        if (Attention has :vibrate) {
+            Attention.vibrate([new Attention.VibeProfile(60, durationMs)]);
+        }
+    }
+}
+
+class PadelMenuDelegate extends WatchUi.Menu2InputDelegate {
+
+    private var _match as PadelMatch;
+    private var _recorder as Recorder;
+
+    function initialize(match as PadelMatch, recorder as Recorder) {
+        Menu2InputDelegate.initialize();
+        _match = match;
+        _recorder = recorder;
+    }
+
+    function onSelect(item as WatchUi.MenuItem) as Void {
+        var id = item.getId();
+        if (id == :continue) {
+            _match.continuePlaying();
+            // The final set never got its own lap; close it now.
+            _recorder.onSetFinished(_match);
+            WatchUi.popView(WatchUi.SLIDE_DOWN);
+        } else if (id == :resume) {
+            _recorder.toggle();
+            WatchUi.popView(WatchUi.SLIDE_DOWN);
+        } else if (id == :exit) {
+            System.exit();
+        } else if (id == :history) {
+            HistoryMenu.show();
+        } else if (id == :save) {
+            MatchHistory.add(_match, _recorder.elapsedSeconds());
+            _recorder.save(_match);
+            System.exit();
+        } else if (id == :discard) {
+            _recorder.discard();
+            System.exit();
+        } else if (id == :swapServer) {
+            _match.swapServer();
+            WatchUi.popView(WatchUi.SLIDE_DOWN);
+        } else if (id == :reset) {
+            _match.reset();
+            WatchUi.popView(WatchUi.SLIDE_DOWN);
+        } else if (id == :touch) {
+            TouchSetting.setEnabled((item as WatchUi.ToggleMenuItem).isEnabled());
+        } else if (id == :golden) {
+            _match.goldenPoint = (item as WatchUi.ToggleMenuItem).isEnabled();
+        }
+    }
+}
