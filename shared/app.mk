@@ -13,7 +13,20 @@ DEBUG_TIME := $(if $(TIME),"$(TIME)",null)
 
 MTPSEND := $(SHARED)/tools/mtpsend
 
-.PHONY: build run sim sim-up device install test release clean debug-time fonts
+.PHONY: help build run watch sim sim-up device install test release clean debug-time fonts
+
+.DEFAULT_GOAL := help
+
+# Lists the targets that have a "## description" comment.
+help: ## Show this help
+	@echo "Usage: make <target> [VARIABLE=value ...]"
+	@echo
+	@echo "Targets:"
+	@awk 'BEGIN { FS = ":.*## " } /^[a-z-]+:.*## / { printf "  %-8s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+	@echo
+	@echo "Variables:"
+	@echo "  TIME     Fake clock in debug builds, e.g. make watch TIME=10:19"
+	@echo "  DEVICE   Target device (default: $(DEVICE))"
 
 # source/DebugTime.mc is generated and gitignored: run any make target once
 # after a clone before building from an IDE.
@@ -23,10 +36,10 @@ debug-time:
 		'(:release) const DEBUG_TIME as Lang.String or Null = null;' > source/DebugTime.mc.tmp
 	@cmp -s source/DebugTime.mc.tmp source/DebugTime.mc && rm source/DebugTime.mc.tmp || mv source/DebugTime.mc.tmp source/DebugTime.mc
 
-build: debug-time
+build: debug-time ## Compile the debug build
 	"$(BIN)/monkeyc" -f monkey.jungle -d $(DEVICE) -o bin/$(NAME).prg -y "$(KEY)" -w
 
-sim:
+sim: ## Open the simulator
 	open "$(BIN)/ConnectIQ.app"
 
 # Start the simulator if needed and wait until monkeydo can reach it (port 1234).
@@ -36,16 +49,36 @@ sim-up:
 	@for i in $$(seq 60); do nc -z 127.0.0.1 1234 2>/dev/null && exit 0; sleep 0.5; done; \
 		echo "Simulator did not start (no listener on port 1234)"; exit 1
 
-run: build sim-up
+run: build sim-up ## Compile and run in the simulator
 	"$(BIN)/monkeydo" bin/$(NAME).prg $(DEVICE)
 
+# Rebuild and reload in the simulator when a source or resource file changes.
+# Polls once a second (no fswatch needed). monkeydo blocks while the app runs,
+# so it runs in the background and is stopped before each reload.
+watch: sim-up ## Run in the simulator and reload on file changes
+	@trap 'kill $$pid 2>/dev/null; exit 0' INT TERM; \
+	pid=; last=; \
+	while true; do \
+		now=$$(find source resources $(SHARED)/source $(SHARED)/resources -type f ! -name DebugTime.mc \
+			-exec stat -f '%m %N' {} + | md5); \
+		if [ "$$now" != "$$last" ]; then \
+			last=$$now; \
+			kill $$pid 2>/dev/null; wait $$pid 2>/dev/null; pid=; \
+			if $(MAKE) --no-print-directory build; then \
+				"$(BIN)/monkeydo" bin/$(NAME).prg $(DEVICE) & pid=$$!; \
+			fi; \
+			echo "Watching for changes (Ctrl-C to stop)..."; \
+		fi; \
+		sleep 1; \
+	done
+
 # Release-optimised .prg for side-loading onto the watch.
-device: debug-time
+device: debug-time ## Compile the release build for the watch
 	"$(BIN)/monkeyc" -f monkey.jungle -d $(DEVICE) -r -o bin/$(NAME)-device.prg -y "$(KEY)"
 
 # Copy the device build to GARMIN/Apps over USB (MTP). Needs `brew install libmtp`.
 # mtp-sendfile can't resolve the watch's storage, hence the small shared/tools/mtpsend.
-install: device $(MTPSEND)
+install: device $(MTPSEND) ## Copy the release build to the watch over USB
 	@set -o pipefail; \
 		id=$$(mtp-folders 2>/dev/null | awk -F'\t' '$$2 == "  Apps" { print $$1; exit }'); \
 		test -n "$$id" || { echo "Watch not found: connect it over USB"; exit 1; }; \
@@ -56,18 +89,18 @@ $(MTPSEND): $(MTPSEND).c
 	clang -O2 -o $@ $< $$(pkg-config --cflags --libs libmtp)
 
 # Run the (:test) functions in the simulator.
-test: debug-time
+test: debug-time ## Run the unit tests in the simulator
 	"$(BIN)/monkeyc" -f monkey.jungle -d $(DEVICE) -t -o bin/$(NAME)-test.prg -y "$(KEY)"
 	@$(MAKE) --no-print-directory sim-up
 	@# monkeydo exits 1 even when all tests pass, so check its summary line instead.
 	@"$(BIN)/monkeydo" bin/$(NAME)-test.prg $(DEVICE) -t | tee bin/test.log; grep -q '^PASSED' bin/test.log
 
-release: debug-time
+release: debug-time ## Compile the .iq package for the store
 	"$(BIN)/monkeyc" -f monkey.jungle -e -r -o bin/$(NAME).iq -y "$(KEY)"
 
 # Regenerate the shared bitmap fonts from the TTF.
-fonts:
+fonts: ## Regenerate the shared bitmap fonts
 	uv run --with pillow python $(SHARED)/tools/make_font.py
 
-clean:
+clean: ## Remove the build output
 	rm -rf bin

@@ -60,18 +60,19 @@ class LazyFaceView extends WatchUi.WatchFace {
 
         // Date
         dc.setColor(theme.secondary, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, height * 0.20, fontMedium, getDateString(), Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        dc.drawText(centerX, height * FaceLayout.DATE_Y, fontMedium, getDateString(), Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
 
         // Time
-        BlockText.draw(dc, getTimeString(), centerX, height * 0.45, 14, 26, accent);
+        BlockText.draw(dc, getTimeString(), centerX, height * FaceLayout.TIME_Y,
+            FaceLayout.TIME_BLOCK_WIDTH, FaceLayout.TIME_BLOCK_HEIGHT, accent);
 
         // Data field slots (Customize > Left / Right / Bottom field)
         var fieldCount = DataFields.NAMES.size();
-        drawField(dc, width * 0.31, height * 0.70, fontMedium, theme,
+        drawField(dc, width * FaceLayout.FIELD_LEFT_X, height * FaceLayout.FIELDS_Y, fontMedium, theme,
             Choices.index("fieldLeft", fieldCount, DataFields.HEART_RATE));
-        drawField(dc, width * 0.69, height * 0.70, fontMedium, theme,
+        drawField(dc, width * FaceLayout.FIELD_RIGHT_X, height * FaceLayout.FIELDS_Y, fontMedium, theme,
             Choices.index("fieldRight", fieldCount, DataFields.STEPS));
-        drawPillField(dc, centerX, height * 0.855, fontSmall, theme, accent,
+        drawPillField(dc, centerX, height * FaceLayout.PILL_Y, fontSmall, theme, accent,
             Choices.index("fieldBottom", fieldCount, DataFields.BATTERY));
     }
 
@@ -82,9 +83,10 @@ class LazyFaceView extends WatchUi.WatchFace {
         dc.clear();
 
         var minute = System.getClockTime().min;
-        var offsetX = ((minute % 5) - 2) * 6;
-        var offsetY = (((minute / 5) % 5) - 2) * 6;
-        BlockText.draw(dc, getTimeString(), dc.getWidth() / 2 + offsetX, dc.getHeight() / 2 + offsetY, 7, 13, Theme.LOW_POWER);
+        var offsetX = ((minute % 5) - 2) * FaceLayout.LOW_POWER_SHIFT;
+        var offsetY = (((minute / 5) % 5) - 2) * FaceLayout.LOW_POWER_SHIFT;
+        BlockText.draw(dc, getTimeString(), dc.getWidth() / 2 + offsetX, dc.getHeight() / 2 + offsetY,
+            FaceLayout.LOW_POWER_BLOCK_WIDTH, FaceLayout.LOW_POWER_BLOCK_HEIGHT, Theme.LOW_POWER);
     }
 
     private function drawField(dc as Dc, centerX as Numeric, centerY as Numeric, font as FontResource,
