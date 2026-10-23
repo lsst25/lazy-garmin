@@ -21,10 +21,16 @@ module TouchSetting {
     }
 
     // Turns touch events off at the system level where supported (API 5.2+).
-    // Only allowed in the foreground, so call it from a view's onShow().
+    // Only allowed in the foreground: it throws OperationNotAllowedException
+    // when the view comes back while a notification or call alert is still
+    // closing (this crashed the app). The taps are also filtered in
+    // PadelDelegate, so a failed call here is harmless; the next onShow retries.
     function apply() as Void {
         if (WatchUi has :configureTouchEvents) {
-            WatchUi.configureTouchEvents({ :enabled => isEnabled() });
+            try {
+                WatchUi.configureTouchEvents({ :enabled => isEnabled() });
+            } catch (e) {
+            }
         }
     }
 }

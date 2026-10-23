@@ -225,6 +225,43 @@ class PadelMatch {
         return isFinished() ? :match : :set;
     }
 
+    // Undo steps kept when the match is saved to storage (keeps the value small).
+    const STORED_HISTORY = 50;
+    const STORAGE_VERSION = 1;
+
+    // True once anything was scored or changed (worth saving / resuming).
+    function hasProgress() as Boolean {
+        return _history.size() > 0 || setScores.size() > 0
+            || points[0] + points[1] + games[0] + games[1] > 0;
+    }
+
+    // Whole match state, for Application.Storage.
+    function toStorage() as Array {
+        var history = _history.size() > STORED_HISTORY
+            ? _history.slice(_history.size() - STORED_HISTORY, null) : _history;
+        return [STORAGE_VERSION, goldenPoint, points, games, sets, tiebreak, setScores,
+            server, tiebreakFirstServer, freePlay, history];
+    }
+
+    // Restores a toStorage() value. Returns false (and changes nothing) when
+    // the value is missing or from an incompatible version.
+    function fromStorage(data) as Boolean {
+        if (!(data instanceof Array) || data.size() != 11 || data[0] != STORAGE_VERSION) {
+            return false;
+        }
+        goldenPoint = data[1] as Boolean;
+        points = data[2] as Array<Number>;
+        games = data[3] as Array<Number>;
+        sets = data[4] as Array<Number>;
+        tiebreak = data[5] as Boolean;
+        setScores = data[6] as Array<Array<Number>>;
+        server = data[7] as Number;
+        tiebreakFirstServer = data[8] as Number;
+        freePlay = data[9] as Boolean;
+        _history = data[10] as Array<Array>;
+        return true;
+    }
+
     private function saveSnapshot() as Void {
         if (_history.size() >= MAX_HISTORY) {
             _history = _history.slice(1, null);

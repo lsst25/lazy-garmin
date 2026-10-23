@@ -267,3 +267,33 @@ function testRecorderMidMatchStartAndUndo(logger as Logger) as Boolean {
     recorder.save(match);
     return match.setScores.size() == 2 && !recorder.hasSession();
 }
+
+// Save after a change, then restore into a new match: score, serve, settings
+// and undo history must come back.
+(:test)
+function testMatchStateRoundTrip(logger as Logger) as Boolean {
+    var match = new PadelMatch();
+    match.goldenPoint = true;
+    winGames(match, 0, 6);
+    winGames(match, 1, 2);
+    winPoints(match, 0, 2);
+    match.swapServer();
+    MatchState.save(match);
+
+    var restored = MatchState.load();
+    MatchState.clear();
+    if (restored == null) {
+        return false;
+    }
+    var same = restored.scoreSummary().equals(match.scoreSummary())
+        && restored.pointLabel(0).equals("30") && restored.currentServer() == match.currentServer()
+        && restored.goldenPoint;
+    var undone = restored.undo() && restored.undo(); // the undo history came back
+    return same && undone && MatchState.load() == null;
+}
+
+(:test)
+function testMatchStateNothingToSave(logger as Logger) as Boolean {
+    MatchState.save(new PadelMatch());
+    return MatchState.load() == null;
+}

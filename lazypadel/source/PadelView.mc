@@ -46,6 +46,8 @@ class PadelView extends WatchUi.View {
     private var _match as PadelMatch;
     private var _recorder as Recorder;
     private var _timer as Timer.Timer?;
+    // Asks once per app start whether to resume a saved match.
+    private var _resumeOffered as Boolean = false;
     private var _fontMedium as FontResource?;
     private var _fontSmall as FontResource?;
 
@@ -68,6 +70,11 @@ class PadelView extends WatchUi.View {
         var timer = new Timer.Timer();
         timer.start(method(:onTick), 1000, true);
         _timer = timer;
+        if (!_resumeOffered) {
+            // Push the question just after the view is shown, not inside onShow.
+            _resumeOffered = true;
+            new Timer.Timer().start(method(:offerResume), 50, false);
+        }
     }
 
     function onHide() as Void {
@@ -76,6 +83,10 @@ class PadelView extends WatchUi.View {
             timer.stop();
             _timer = null;
         }
+    }
+
+    function offerResume() as Void {
+        MatchState.offerResume(_match);
     }
 
     function onTick() as Void {

@@ -60,6 +60,7 @@ class PadelDelegate extends WatchUi.BehaviorDelegate {
 
     function onBack() as Boolean {
         if (_match.undo()) {
+            MatchState.save(_match);
             buzz(40);
             WatchUi.requestUpdate();
             return true;
@@ -98,6 +99,7 @@ class PadelDelegate extends WatchUi.BehaviorDelegate {
             _recorder.syncLaps(_match);
         }
         var result = _match.addPoint(team);
+        MatchState.save(_match); // so a crash or a closed app can resume
         if (result == :point) {
             buzz(40);
         } else if (result == :game) {
@@ -131,6 +133,7 @@ class PadelMenuDelegate extends WatchUi.Menu2InputDelegate {
         var id = item.getId();
         if (id == :continue) {
             _match.continuePlaying();
+            MatchState.save(_match);
             if (_recorder.hasSession() && !_recorder.isRecording()) {
                 _recorder.toggle(_match); // Start paused the recording to open this menu
             }
@@ -139,18 +142,21 @@ class PadelMenuDelegate extends WatchUi.Menu2InputDelegate {
             _recorder.toggle(_match);
             WatchUi.popView(WatchUi.SLIDE_DOWN);
         } else if (id == :exit) {
+            MatchState.clear();
             System.exit();
         } else if (id == :history) {
             HistoryMenu.show();
         } else if (id == :save) {
             MatchHistory.add(_match, _recorder.elapsedSeconds());
             _recorder.save(_match);
+            MatchState.clear();
             System.exit();
         } else if (id == :discard) {
             WatchUi.pushView(new WatchUi.Confirmation("Discard activity?"),
                 new ConfirmDelegate(method(:discardAndExit)), WatchUi.SLIDE_UP);
         } else if (id == :swapServer) {
             _match.swapServer();
+            MatchState.save(_match);
             WatchUi.popView(WatchUi.SLIDE_DOWN);
         } else if (id == :reset) {
             WatchUi.pushView(new WatchUi.Confirmation("Reset score?"),
@@ -159,17 +165,20 @@ class PadelMenuDelegate extends WatchUi.Menu2InputDelegate {
             PadelSettings.show();
         } else if (id == :golden) {
             _match.goldenPoint = (item as WatchUi.ToggleMenuItem).isEnabled();
+            MatchState.save(_match);
         }
     }
 
     function discardAndExit() as Void {
         _recorder.discard();
+        MatchState.clear();
         System.exit();
     }
 
     function resetScore() as Void {
         _match.reset();
         _recorder.onMatchReset();
+        MatchState.clear();
         WatchUi.popView(WatchUi.SLIDE_DOWN); // close the menu under the confirmation
     }
 }
